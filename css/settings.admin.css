@@ -1,0 +1,22 @@
+#events {
+    max-width: 550px;
+    white-space: normal;
+}
+
+#events th.small {
+    width: 5em;
+}
+
+#events th.small, #events td.small {
+    text-align: center;
+}
+
+#events td.small label {
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
+#events tbody tr {
+    height: 2.5em;
+}

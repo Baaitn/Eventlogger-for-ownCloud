@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<info>
+    <id>logger</id>
+    <name>Eventlogger</name>
+    <description>
+        Log various events such to either or both the owncloud.log and the database.
+    </description>
+    <licence>AGPL</licence>
+    <author>Bert Maerten</author>
+    <version>0.0.1</version>
+    <namespace>Logger</namespace>
+    <category>other</category>
+    <dependencies>
+        <owncloud min-version="8" />
+    </dependencies>
+</info>
