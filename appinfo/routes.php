@@ -13,7 +13,6 @@
  * Routing for AJAX calls
  */
 $this->create('logger_ajax_settings_admin', 'ajax/settings.admin.php')->actionInclude('logger/ajax/settings.admin.php');
-$this->create('logger_ajax_settings_admin_events', 'ajax/settings.admin.events.php')->actionInclude('logger/ajax/settings.admin.events.php');
 
 /**
  * Create your routes in here. The name is the lowercase name of the controller
