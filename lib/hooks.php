@@ -2,19 +2,36 @@
 
 class hooks {
 
+    /**A class to handle and process each hook.
+     * 
+     * How it works:
+     * After a hook is emitted that is registered in appinfo/app.php, the corresponding handler in lib/hooks.php gets executed.
+     * Properties get collected and log() is called. Here we check if it is a hook that should be logged according to settings. If it should, everything gets passed on to write(). 
+     * There we write to the console and/or database, depending on what is enabled in the adminsettings.
+     */
+    
     //Helpers
-    static private function log($message, $action, $type, $path, $newpath, $with, $user, $ip, $owner) {
+    static private function log($prefix, $action, $message, $type, $path, $newpath, $sharedwith, $owner, $user, $ip) {
+        $defaultevents = '[{"action":"Login","settings":{"pre":false,"post":false}},{"action":"Logout","settings":{"post":false}},{"action":"Create","settings":{"pre":false,"post":true}},{"action":"Read","settings":{"post":true}},{"action":"Update","settings":{"pre":false,"post":true}},{"action":"Rename","settings":{"pre":false,"post":true}},{"action":"Copy","settings":{"pre":false,"post":false}},{"action":"Trash","settings":{"pre":true,"post":true}},{"action":"PermaDelete","settings":{"pre":false,"post":true}},{"action":"Share","settings":{"post":false}},{"action":"Unshare","settings":{"post":false}}]';
+        $events = (array) json_decode(OCP\Config::getAppValue('logger', 'events', $defaultevents));
+        foreach ($events as $key => $val) {
+            if ($val->action === $action && $val->settings->$prefix) {
+                self::write($prefix.$action, $message, $type, $path, $newpath, $sharedwith, $owner, $user, $ip);
+            }
+        }
+    }
+    static private function write($event, $message, $type, $path, $newpath, $sharedwith, $owner, $user, $ip) {
         if (self::toConsole()) {
             OCP\Util::writeLog('logger', $message, OCP\Util::INFO);
         }
         if (self::toDatabase()) {
             $time = date('c'); //Use 'U' with int(11) [unix timestamp], 'c' with datetime, change this in /appinfo/database.xml
-            $query = OCP\DB::prepare('INSERT INTO `*PREFIX*logs` (`time`, `message`, `action`, `type`, `path`, `newpath`, `with`, `user`, `ip`, `owner`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
-            $query->execute(array($time, $message, $action, $type, $path, $newpath, $with, $user, $ip, $owner));
+            $query = OCP\DB::prepare('INSERT INTO `*PREFIX*logs` (`time`, `event`, `message`, `type`, `path`, `newpath`, `with`, `owner`, `user`, `ip`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+            $query->execute(array($time, $event, $message, $type, $path, $newpath, $sharedwith, $owner, $user, $ip));
         }
     }
     static private function toConsole() {
-        if (\OCP\Config::getAppValue('logger', 'console', 'true') === 'true') {
+        if (\OCP\Config::getAppValue('logger', 'console', 'false') === 'true') {
             return true;
         } else {
             return false;
@@ -29,150 +46,168 @@ class hooks {
     }
 
     //Handlers
-    static public function bLogin($params) {
+    static public function preLogin($params) {
         $ip = $_SERVER['REMOTE_ADDR'];
         $pass = $params['password'];
         $user = $params['uid'];
         $message = $user . ' attempted to log into ownCloud from ' . $ip;
-        self::log($message, 'preLogin', null, null, null, null, $user, $ip, null);
+        self::log('pre', 'Login', $message, null, null, null, null, null, $user, $ip);
     }
-    static public function aLogin($params) {
+    static public function postLogin($params) {
         $ip = $_SERVER['REMOTE_ADDR'];
         $pass = $params['password'];
         $user = $params['uid']; //OCP\User::getUser();
         $message = $user . ' logged into ownCloud from ' . $ip;
-        self::log($message, 'postLogin', null, null, null, null, $user, $ip, null);
+        self::log('post', 'Login', $message, null, null, null, null, null, $user, $ip);
     }
-    static public function  Logout($params) {
+    static public function postLogout($params) {
         $user = OCP\User::getUser();
         $message = $user . ' logged out of ownCloud';
-        self::log($message, 'Logout', null, null, null, null, $user, null, null);
+        self::log('post', 'Logout', $message, null, null, null, null, null, $user, null);
     }
-    static public function bTouch($params) {
+    static public function preTouch($params) {
         $path = $params['path'];
         $user = OCP\User::getUser();
-        $message = $user . ' attempted to touch ' . $path;
-        self::log($message, 'preTouch', null, $path, null, null, $user, null, null);
+        $message = null;
+        self::log('pre', 'Touch', $message, null, $path, null, null, null, $user, null);
     }
-    static public function aTouch($params) {
+    static public function postTouch($params) {
         $path = $params['path'];
         $user = OCP\User::getUser();
-        $message = $user . ' touched ' . $path;
-        self::log($message, 'postTouch', null, $path, null, null, $user, null, null);
+        $message = null;
+        self::log('post', 'Touch', $message, null, $path, null, null, null, $user, null);
     }
-    static public function bCreate($params) {
+    static public function preCreate($params) {
         $path = $params['path'];
         $user = OCP\User::getUser();
-        $message = $user . ' attempted to create ' . $path;
-        self::log($message, 'preCreate', null, $path, null, null, $user, null, null);
+        $message = null;
+        self::log('pre', 'Create', $message, null, $path, null, null, null, $user, null);
     }
-    static public function aCreate($params) {
+    static public function postCreate($params) {
         $path = $params['path'];
         $user = OCP\User::getUser();
-        $message = $user . ' created ' . $path;
-        self::log($message, 'postCreate', null, $path, null, null, $user, null, null);
+        $message = $user . ' has created or uploaded \'' . substr($path, 1) . '\'';
+        self::log('post', 'Create', $message, null, $path, null, null, null, $user, null);
     }
-    static public function  Read($params) {
+    static public function postRead($params) {
         $path = $params['path'];
         $user = OCP\User::getUser();
-        $message = $user . ' read ' . $path;
-        self::log($message, 'Read', null, $path, null, null, $user, null, null);
+        $message = $user . ' has downloaded or read \'' . substr($path, 1) . '\'';
+        self::log('post', 'Read', $message, null, $path, null, null, null, $user, null);
     }
-    static public function bWrite($params) {
+    static public function preWrite($params) {
         $path = $params['path'];
         $user = OCP\User::getUser();
-        $message = $user . ' attempted to write to ' . $path;
-        self::log($message, 'preWrite', null, $path, null, null, $user, null, null);
+        $message = null;
+        self::log('pre', 'Write', $message, null, $path, null, null, null, $user, null);
     }
-    static public function aWrite($params) {
+    static public function postWrite($params) {
         $path = $params['path'];
         $user = OCP\User::getUser();
-        $message = $user . ' wrote to ' . $path;
-        self::log($message, 'postWrite', null, $path, null, null, $user, null, null);
+        $message = null;
+        self::log('post', 'Write', $message, null, $path, null, null, null, $user, null);
     }
-    static public function bUpdate($params) {
+    static public function preUpdate($params) {
         $path = $params['path'];
         $user = OCP\User::getUser();
-        $message = $user . ' attempted to update ' . $path;
-        self::log($message, 'preUpdate', null, $path, null, null, $user, null, null);
+        $message = null;
+        self::log('pre', 'Update', $message, null, $path, null, null, null, $user, null);
     }
-    static public function aUpdate($params) {
+    static public function postUpdate($params) {
         $path = $params['path'];
         $user = OCP\User::getUser();
-        $message = $user . ' updated ' . $path;
-        self::log($message, 'postUpdate', null, $path, null, null, $user, null, null);
+        $message = $user . ' has modified \'' . substr($path, 1) . '\'';
+        self::log('post', 'Update', $message, null, $path, null, null, null, $user, null);
     }
-    static public function bDelete($params) {
+    static public function preDelete($params) {
         $path = $params['path'];
         $user = OCP\User::getUser();
-        $message = $user . ' attempted to delete ' . $path;
-        self::log($message, 'preDelete', null, $path, null, null, $user, null, null);
+        $message = null;
+        self::log('pre', 'Delete', $message, null, $path, null, null, null, $user, null);
     }
-    static public function aDelete($params) {
+    static public function postDelete($params) {
         $path = $params['path'];
         $user = OCP\User::getUser();
-        $message = $user . ' deleted ' . $path;
-        self::log($message, 'postDelete', null, $path, null, null, $user, null, null);
+        $message = $user . ' has deleted \'' . substr($path, 1) . '\'';
+        self::log('post', 'Delete', $message, null, $path, null, null, null, $user, null);
     }
-    static public function bRename($params) {
+    static public function preRename($params) {
         $oldpath = $params['oldpath'];
         $newpath = $params['newpath'];
         $user = OCP\User::getUser();
-        $message = $user . ' attempted to rename ' . $oldpath . ' to ' . $newpath;
-        self::log($message, 'preRename', null, $oldpath, $newpath, null, $user, null, null);
+        $message = null;
+        self::log('pre', 'Rename', $message, null, $oldpath, $newpath, null, null, $user, null);
     }
-    static public function aRename($params) {
+    static public function postRename($params) {
         $oldpath = $params['oldpath'];
         $newpath = $params['newpath'];
         $user = OCP\User::getUser();
-        $message = $user . ' renamed ' . $oldpath . ' to ' . $newpath;
-        self::log($message, 'postRename', null, $oldpath, $newpath, null, $user, null, null);
+        $message = $user . ' has renamed \'' . substr($oldpath, 1) . '\' to \'' . substr($newpath, 1) . '\'';
+        self::log('post', 'Rename', $message, null, $oldpath, $newpath, null, null, $user, null);
     }
-    static public function bCopy($params) {
+    static public function preCopy($params) {
         $oldpath = $params['oldpath'];
         $newpath = $params['newpath'];
         $user = OCP\User::getUser();
-        $message = $user . ' attempted to copy ' . $oldpath . ' to ' . $newpath;
-        self::log($message, 'preCopy', null, $oldpath, $newpath, null, $user, null, null);
+        $message = null;
+        self::log('pre', 'Copy', $message, null, $oldpath, $newpath, null, null, $user, null);
     }
-    static public function aCopy($params) {
+    static public function postCopy($params) {
         $oldpath = $params['oldpath'];
         $newpath = $params['newpath'];
         $user = OCP\User::getUser();
-        $message = $user . ' copied ' . $oldpath . ' to ' . $newpath;
-        self::log($message, 'postCopy', null, $oldpath, $newpath, null, $user, null, null);
+        $message = $user . ' has copied \'' . substr($oldpath, 1) . '\' to \'' . substr($newpath, 1) . '\'';
+        self::log('post', 'Copy', $message, null, $oldpath, $newpath, null, null, $user, null);
     }
-    static public function bRestore($params) {
+    static public function preRestore($params) {
+        //Reserved for 'restoring previous versions'
+    }
+    static public function postRestore($params) {
+        //Reserved for 'restoring previous versions'
+    }
+    static public function preTrash($params){
         $filepath = $params['filePath'];
         $trashpath = $params['trashPath'];
         $user = OCP\User::getUser();
-        $message = $user . ' attempted to restore ' . $filepath . ' to ' . $trashpath;
-        self::log($message, 'preRestore', null, $filepath, $trashpath, null, $user, null, null);
+        $message = $user . ' has moved \'' . substr($filepath, 1) . '\' to the trashbin';;
+        self::log('pre', 'Trash', $message, null, $filepath, $trashpath, null, null, $user, null);
     }
-    static public function aRestore($params) {
+    static public function postTrash($params){
         $filepath = $params['filePath'];
         $trashpath = $params['trashPath'];
         $user = OCP\User::getUser();
-        $message = $user . ' restored ' . $filepath . ' to ' . $trashpath;
-        self::log($message, 'postRestore', null, $filepath, $trashpath, null, $user, null, null);
+        $message = $user . ' has restored \'' . substr($filepath, 1) . '\' from the trashbin';
+        self::log('post', 'Trash', $message, null, $filepath, $trashpath, null, null, $user, null);
     }
-    static public function  Share($params) {
+    static public function prePermaDelete($params){
+        $path = $params['path'];
+        $user = OCP\User::getUser();
+        $message = null;
+        self::log('pre', 'PermaDelete', $message, null, $path, null, null, null, $user, null);
+    }
+    static public function postPermaDelete($params){
+        $path = $params['path'];
+        $user = OCP\User::getUser();
+        $message = $user . ' has permanently deleted \'' . substr($path, 1) . '\'';
+        self::log('post', 'PermaDelete', $message, null, $path, null, null, null, $user, null);
+    }
+    static public function postShare($params) {
         $type = $params['itemType'];
         $path = $params['fileTarget'];
         $with = $params['shareWith'];
         $owner = $params['uidOwner'];
         $user = OCP\User::getUser();
-        $message = $type . ' \'' . substr($path, 1) . '\' has been shared with ' . $with . ' by ' . $user;
-        self::log($message, 'Share', $type, $path, null, $with, $user, null, $owner);
+        $message = 'The ' . $type . ' \'' . substr($path, 1) . '\' has been shared with ' . $with . ' by ' . $user;
+        self::log('post', 'Share', $message, $type, $path, null, $with, $owner, $user, null);
     }
-    static public function  Unshare($params) {
+    static public function postUnshare($params) {
         $type = $params['itemType'];
         $path = $params['fileTarget'];
         $with = $params['shareWith'];
         $owner = $params['uidOwner'];
         $user = OCP\User::getUser();
         $message = 'The ' . $type . ' \'' . substr($path, 1) . '\' has been unshared with ' . $with . ' by ' . $user;
-        self::log($message, 'Unshare', $type, $path, null, $with, $user, null, $owner);
+        self::log('post', 'Unshare', $message, $type, $path, null, $with, $owner, $user, null);
     }
-
+    
 }

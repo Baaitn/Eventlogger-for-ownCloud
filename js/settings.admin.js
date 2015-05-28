@@ -36,10 +36,10 @@
             var events = [];
             $('#logger #events tbody tr').each(function() {
                 var row = $(this);
-                var name = row.attr('name');
+                var action = row.attr('name');
                 var pre = row.children('td:nth-child(1)').children().children().prop('checked');
                 var post = row.children('td:nth-child(2)').children().children().prop('checked');
-                events.push({name: name, settings: {pre: pre, post: post}});
+                events.push({action: action, settings: {pre: pre, post: post}});
             });
             var stringified = JSON.stringify(events);
             

@@ -24,32 +24,34 @@ use OCP\App;
  * $slotName        Name of the method that will be called when registered signal is emitted 
  */
 \OC::$CLASSPATH['hooks'] = 'logger/lib/hooks.php';
-    //Usermanagement
-Util::connectHook('OC_User', 'pre_login', 'hooks', 'bLogin');
-Util::connectHook('OC_User', 'post_login', 'hooks', 'aLogin');
-Util::connectHook('OC_User', 'logout', 'hooks', 'Logout');
-    //Filesystem
-Util::connectHook('OC_Filesystem', 'touch', 'hooks', 'bTouch');
-Util::connectHook('OC_Filesystem', 'post_touch', 'hooks', 'aTouch');
-Util::connectHook('OC_Filesystem', 'create', 'hooks', 'bCreate');
-Util::connectHook('OC_Filesystem', 'post_create', 'hooks', 'aCreate');
-Util::connectHook('OC_Filesystem', 'read', 'hooks', 'Read');
-Util::connectHook('OC_Filesystem', 'write', 'hooks', 'bWrite');
-Util::connectHook('OC_Filesystem', 'post_write', 'hooks', 'aWrite');
-Util::connectHook('OC_Filesystem', 'update', 'hooks', 'bUpdate');
-Util::connectHook('OC_Filesystem', 'post_update', 'hooks', 'aUpdate');
-Util::connectHook('OC_Filesystem', 'delete', 'hooks', 'bDelete');
-Util::connectHook('OC_Filesystem', 'post_delete', 'hooks', 'aDelete');
-Util::connectHook('OC_Filesystem', 'rename', 'hooks', 'bRename');
-Util::connectHook('OC_Filesystem', 'post_rename', 'hooks', 'aRename');
-Util::connectHook('OC_Filesystem', 'copy', 'hooks', 'bCopy');
-Util::connectHook('OC_Filesystem', 'post_copy', 'hooks', 'aCopy');
-    //Trashbin
-Util::connectHook('\OCA\Files_Trashbin\Trashbin', 'restore', 'hooks', 'bRestore');
-Util::connectHook('\OCA\Files_Trashbin\Trashbin', 'post_restore', 'hooks', 'aRestore');
-    //Sharing
-Util::connectHook('OCP\Share', 'post_shared', 'hooks', 'Share');
-Util::connectHook('OCP\Share', 'post_unshare', 'hooks', 'Unshare');
+//Usermanagement
+Util::connectHook('OC_User', 'pre_login', 'hooks', 'preLogin');
+Util::connectHook('OC_User', 'post_login', 'hooks', 'postLogin');
+Util::connectHook('OC_User', 'logout', 'hooks', 'postLogout');
+//Filesystem
+Util::connectHook('OC_Filesystem', 'touch', 'hooks', 'preTouch'); //not logged by default
+Util::connectHook('OC_Filesystem', 'post_touch', 'hooks', 'postTouch'); //not logged by default
+Util::connectHook('OC_Filesystem', 'create', 'hooks', 'preCreate');
+Util::connectHook('OC_Filesystem', 'post_create', 'hooks', 'postCreate');
+Util::connectHook('OC_Filesystem', 'read', 'hooks', 'postRead');
+Util::connectHook('OC_Filesystem', 'write', 'hooks', 'preWrite'); //not logged by default
+Util::connectHook('OC_Filesystem', 'post_write', 'hooks', 'postWrite'); //not logged by default
+Util::connectHook('OC_Filesystem', 'update', 'hooks', 'preUpdate');
+Util::connectHook('OC_Filesystem', 'post_update', 'hooks', 'postUpdate');
+Util::connectHook('OC_Filesystem', 'delete', 'hooks', 'preDelete'); //not visible by default
+Util::connectHook('OC_Filesystem', 'post_delete', 'hooks', 'postDelete'); //not visible by default, similar to preTrash
+Util::connectHook('OC_Filesystem', 'rename', 'hooks', 'preRename');
+Util::connectHook('OC_Filesystem', 'post_rename', 'hooks', 'postRename');
+Util::connectHook('OC_Filesystem', 'copy', 'hooks', 'preCopy');
+Util::connectHook('OC_Filesystem', 'post_copy', 'hooks', 'postCopy');
+//Trashbin
+Util::connectHook('\OCA\Files_Trashbin\Trashbin', 'post_moveToTrash', 'hooks', 'preTrash'); //filesystem > trash
+Util::connectHook('\OCA\Files_Trashbin\Trashbin', 'post_restore', 'hooks', 'postTrash'); //trash > filesystem
+Util::connectHook('\OCP\Trashbin', 'preDelete', 'hooks', 'prePermaDelete');
+Util::connectHook('\OCP\Trashbin', 'delete', 'hooks', 'postPermaDelete');
+//Sharing
+Util::connectHook('OCP\Share', 'post_shared', 'hooks', 'postShare');
+Util::connectHook('OCP\Share', 'post_unshare', 'hooks', 'postUnshare');
 
 /** 
  *  Register the configuration screens that should appear in the admin & personal section.

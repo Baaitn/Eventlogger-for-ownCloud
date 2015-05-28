@@ -20,6 +20,12 @@
             <!--<length>11</length>--> <!-- in case of integer -->
             <!--<default>0000-00-00 00:00:00</default>-->
             </field>
+           <field>
+                <name>event</name>
+                <type>text</type>
+                <notnull>true</notnull>
+                <length>32</length>
+            </field>
             <field>
                 <name>message</name>
                 <type>text</type>
@@ -27,21 +33,9 @@
                 <length>512</length>
             </field>
             <field>
-                <name>user</name>
-                <type>text</type>
-                <notnull>true</notnull>
-                <length>64</length>
-            </field>
-            <field>
-                <name>ip</name>
+                <name>type</name>
                 <type>text</type>
                 <notnull>false</notnull>
-                <length>15</length>
-            </field>
-            <field>
-                <name>action</name>
-                <type>text</type>
-                <notnull>true</notnull>
                 <length>11</length>
             </field>
             <field>
@@ -63,16 +57,22 @@
                 <length>64</length>
             </field>
             <field>
-                <name>type</name>
-                <type>text</type>
-                <notnull>false</notnull>
-                <length>11</length>
-            </field>
-            <field>
                 <name>owner</name>
                 <type>text</type>
                 <notnull>false</notnull>
                 <length>64</length>
+            </field>
+            <field>
+                <name>user</name>
+                <type>text</type>
+                <notnull>true</notnull>
+                <length>64</length>
+            </field>
+            <field>
+                <name>ip</name>
+                <type>text</type>
+                <notnull>false</notnull>
+                <length>15</length>
             </field>
             <index>
                 <name>index</name>
